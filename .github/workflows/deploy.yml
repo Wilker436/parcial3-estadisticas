@@ -1,0 +1,55 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: front/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        working-directory: front
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        working-directory: front
+        env:
+          VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
+          VITE_BASE_URL: ${{ secrets.VITE_BASE_URL }}
+        run: pnpm build
+
+      - name: Subir a S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+        run: |
+          aws s3 sync front/dist/ s3://sd-frontend-estadisticas-web/ --delete
+
+      - name: Invalidar caché de CloudFront
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id E1IVM3QK9H18KP \
+            --paths "/*"
