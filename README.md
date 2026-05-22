@@ -89,9 +89,4 @@ pnpm install
 pnpm dev
 ```
 
-Crea un archivo `.env` basado en `.env.example`:
 
-```env
-VITE_API_BASE=https://tu-api.execute-api.us-east-1.amazonaws.com
-VITE_BASE_URL=https://tu-acortador.execute-api.us-east-1.amazonaws.com
-```
